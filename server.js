@@ -27,10 +27,11 @@ app.use(cors({
     'http://localhost:5173',
     'http://localhost:8084',
     'https://vahaanxchange.vercel.app',
-    'https://vahaanxchange.vercel.app/',
     process.env.FRONTEND_URL
   ].filter(Boolean),
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -165,6 +166,87 @@ app.get('/api/meta/:type/:id', async (req, res) => {
 app.get('/ssr/:type/:id', async (req, res) => {
   try {
     const { type, id } = req.params;
+    
+    // Get meta data from internal API
+    const baseUrl = req.protocol + '://' + req.get('host');
+    const metaResponse = await fetch(`${baseUrl}/api/meta/${type}/${id}`);
+    const metaData = await metaResponse.json();
+    
+    if (!metaData || metaData.error) {
+      return res.status(404).send('Vehicle not found');
+    }
+    
+    // Generate basic HTML with proper meta tags for social sharing
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${metaData.title}</title>
+  <meta name="description" content="${metaData.description}">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="${metaData.url}">
+  <meta property="og:title" content="${metaData.title}">
+  <meta property="og:description" content="${metaData.description}">
+  <meta property="og:image" content="${metaData.image}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="${metaData.url}">
+  <meta property="twitter:title" content="${metaData.title}">
+  <meta property="twitter:description" content="${metaData.description}">
+  <meta property="twitter:image" content="${metaData.image}">
+  
+  <!-- WhatsApp -->
+  <meta property="og:site_name" content="VahaanXchange">
+  <meta property="og:locale" content="en_IN">
+  
+  <!-- Redirect to frontend -->
+  <meta http-equiv="refresh" content="0; url=${metaData.url}">
+  <script>
+    // Immediate redirect for users
+    if (typeof window !== 'undefined') {
+      window.location.href = '${metaData.url}';
+    }
+  </script>
+</head>
+<body>
+  <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
+    <h1>${metaData.title}</h1>
+    <p>${metaData.description}</p>
+    <p>Redirecting to VahaanXchange...</p>
+    <a href="${metaData.url}">Click here if you are not redirected automatically</a>
+  </div>
+</body>
+</html>`;
+    
+    res.setHeader('Content-Type', 'text/html');
+    res.send(html);
+  } catch (error) {
+    console.error('SSR Error:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Slug-based SSR Endpoint - handles URLs like /used-car-details/slug
+app.get('/used-:type-details/:slug', async (req, res) => {
+  try {
+    const { type, slug } = req.params;
+    
+    // Extract UUID from slug (last 36 characters)
+    const uuidRegex = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+    const uuidMatch = slug.match(uuidRegex);
+    
+    if (!uuidMatch) {
+      return res.status(400).send('Invalid vehicle ID format');
+    }
+    
+    const id = uuidMatch[0];
     
     // Get meta data from internal API
     const baseUrl = req.protocol + '://' + req.get('host');
