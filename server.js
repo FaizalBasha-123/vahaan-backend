@@ -102,10 +102,9 @@ app.get('/api/meta/:type/:id', async (req, res) => {
     // Get main image from vehicle photos
     const getMainImage = () => {
       if (vehicle.photos && typeof vehicle.photos === 'object') {
-        const categoryOrder = ['exterior', 'interior', 'engine', 'dashboard', 'other'];
-        
-        for (const categoryName of categoryOrder) {
-          const category = vehicle.photos[categoryName];
+        // Use the same logic as frontend - check all categories for first available image
+        const categories = Object.values(vehicle.photos);
+        for (const category of categories) {
           if (Array.isArray(category) && category.length > 0) {
             return category[0];
           }
@@ -226,13 +225,15 @@ app.use((error, req, res, next) => {
   });
 });
 
-// Start server
-const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 VahaanXchange Backend running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔗 API endpoint: http://localhost:${PORT}/api`);
-  console.log(`🎨 SSR endpoint: http://localhost:${PORT}/ssr`);
-});
-
-// For Vercel serverless functions
+// For Vercel serverless functions - export the app without starting server
 export default app;
+
+// For local development - only start server if not in serverless environment
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 VahaanXchange Backend running on port ${PORT}`);
+    console.log(`📊 Health check: http://localhost:${PORT}/health`);
+    console.log(`🔗 API endpoint: http://localhost:${PORT}/api`);
+    console.log(`🎨 SSR endpoint: http://localhost:${PORT}/ssr`);
+  });
+}
