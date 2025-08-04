@@ -23,7 +23,13 @@ app.use(helmet({
 }));
 app.use(compression());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || ['http://localhost:5173', 'https://vahaanxchange.vercel.app'],
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:8084',
+    'https://vahaanxchange.vercel.app',
+    'https://vahaanxchange.vercel.app/',
+    process.env.FRONTEND_URL
+  ].filter(Boolean),
   credentials: true
 }));
 app.use(express.json());
