@@ -117,11 +117,34 @@ app.get('/api/meta/:type/:id', async (req, res) => {
     const title = `${vehicle.year} ${vehicle.brand} ${vehicle.model} ${vehicle.variant || ''} - VahaanXchange`;
     const description = `${vehicle.fuel_type} | ${vehicle.kilometers_driven?.toLocaleString() || 'Low'} km | ₹${vehicle.sell_price?.toLocaleString() || 'Best Price'} | ${vehicle.seller_location_city || 'Available'}`;
     
+    // Generate SEO-friendly slug like the frontend
+    const generateSlug = (vehicle) => {
+      const slugify = (text) => {
+        return (text || '')
+          .toLowerCase()
+          .replace(/[^\w\s-]/g, '') // Remove special characters
+          .replace(/\s+/g, '-') // Replace spaces with hyphens
+          .replace(/-+/g, '-') // Replace multiple hyphens with single
+          .trim();
+      };
+      
+      const brand = slugify(vehicle.brand || 'unknown');
+      const model = slugify(vehicle.model || 'unknown');
+      const variant = slugify(vehicle.variant || 'base');
+      const fuelType = slugify(vehicle.fuel_type || 'petrol');
+      const year = vehicle.year || new Date().getFullYear();
+      const city = slugify(vehicle.seller_location_city || 'india');
+      
+      return `used-${brand}-${model}-${variant}-${fuelType}-${year}-${city}-${id}`;
+    };
+    
+    const slug = generateSlug(vehicle);
+    
     const metaData = {
       title,
       description,
       image: mainImage,
-      url: `${process.env.FRONTEND_URL || 'https://vahaanxchange.vercel.app'}/used-${type}/${id}`,
+      url: `${process.env.FRONTEND_URL || 'https://vahaanxchange.vercel.app'}/used-${type}-details/${slug}`,
       type: 'website'
     };
     
