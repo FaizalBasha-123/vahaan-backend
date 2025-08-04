@@ -121,7 +121,7 @@ app.get('/api/meta/:type/:id', async (req, res) => {
       title,
       description,
       image: mainImage,
-      url: `${process.env.FRONTEND_URL || 'https://vahaanxchange.vercel.app'}/used-${type}-details/${id}`,
+      url: `${process.env.FRONTEND_URL || 'https://vahaanxchange.vercel.app'}/used-${type}/${id}`,
       type: 'website'
     };
     
